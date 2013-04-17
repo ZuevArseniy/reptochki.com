@@ -1,0 +1,117 @@
+Всем привет.
+
+Возможно для многих вышепредставленная информация будет очевидной или знакомой, но я надеюсь, что кто-то узнает что-нибудь полезное отсюда:)
+
+Собственно, прочитав <a title="эту" href="http://habrahabr.ru/post/148213/" target="_blank">эту</a> статью, становится понятно, что клиент надо оптимизировать. Делать это нужно и для заботы о пользователе, ну и для заботы о себе любимом. Нужно понимать, что каждый лишний скачанный байт/файл это не только увеличение времени загрузки страницы (что бесит,да), но и лишняя (хоть и незначительная) нагрузка на сервер! Посему нужно определить следующие вещи.
+<ol>
+	<li>Каждая картинка с уникальным src - это дополнительный запрос на сервер, что черевато нагрузкой на сервер, и на браузер. то же самое касается скриптов и стайлшитов</li>
+	<li>Контент (скрипты, стили), которые не испльзуются на странице - это тоже беда.</li>
+</ol>
+Впрочем, второй пункт спорный довольно, в некоторых случаях бывает проще сразу отдать все, что нужно. Скрипты и стили попадают в кеш браузера и все счастливы. Но бывает и другое. В любом случае, нужно владеть всеми возможностями, и выбирать по ситуации.
+
+Разберем проблему и решение на простом примере.
+
+Допустим, у нас есть сайт, где на всех страницах используется одинаковый хедер и футер. В этой ситуации многие частенько обходятся одним шаблоном, хедер которого выглядит следующим образом
+
+<code>&lt;!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"&gt;
+&lt;html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"&gt;
+&lt;head&gt;
+&lt;meta http-equiv="Content-Type" content="text/html;charset=UTF-8" /&gt;&lt;link media="all" rel="stylesheet" type="text/css" href="/assets/css/all.css" /&gt;
+
+&lt;link media="all" rel="stylesheet" type="text/css" href="/assets/css/form.css" /&gt;
+&lt;style&gt;
+#LastPostsLoader{
+display: block;
+text-align: center;
+}
+&lt;/style&gt;
+&lt;script type="text/javascript"&gt;var last_stock = false;&lt;/script&gt;
+&lt;script type="text/javascript" src="/assets/js/jquery-1.6.2.min.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="/assets/js/jquery.cookie.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="/assets/js/jquery-ui-1.8.16.custom.min.js"&gt;&lt;/script&gt;
+&lt;script src="http://api-maps.yandex.ru/1.1/?key=AIg9KE8BAAAAcT4dXQIA_AdIQ3DniTBtzdK5S3DCUjsGR0gAAAAAAAAAAADJ2oo80iU7IgQGeywURzNnmW_aNQ==&amp;modules=pmap&amp;wizard=constructor" type="text/javascript"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="/assets/js/jquery.countdown.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="/assets/js/main.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="/assets/js/cusel.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="/assets/js/justcorners.js"&gt;&lt;/script&gt;
+
+&lt;!--[if lt IE 7]&gt;
+&lt;link rel="stylesheet" type="text/css" href="/assets/css/ie.css" media="all" /&gt;
+&lt;script type="text/javascript" src="/assets/js/DD_belatedPNG.js"&gt;&lt;/script&gt;
+&lt;script type="text/javascript" src="/assets/js/ie6hover.js"&gt;&lt;/script&gt;
+&lt;![endif]--&gt;
+</code>УЖАС!!!!!
+
+Кто не понял в чем беда, сча все объясню :)
+
+Человек, первый раз зашедший на сайт, получит целый букет совершенно ненужных ему на этой странице скриптов. И даже не малую yandex карту старого api (200 кб!):)
+
+Очевидно, что это ай-яй-яй и нужно делать по другому. Но как быть, если не хочется плодить кучу одинаковых шаблонов, отличающихся только скриптами и стилями? Вот, например, так
+
+Оптимизация (level 1)
+
+<code>&lt;head&gt;
+    &lt;meta http-equiv="Content-Type" content="text/html;charset=UTF-8" /&gt;
+
+    &lt;?foreach($scripts as $script):?&gt;
+
+    &lt;script type="text/javascript" src="/assets/js/&lt;?=$script?&gt;"&gt;&lt;/script&gt;
+
+    &lt;?endforeach;?&gt;
+
+    &lt;?foreach($styles as $style):?&gt;
+
+    &lt;link rel="stylesheet" type="text/css" href="/assets/css/&lt;?=$style?&gt;" media="all" /&gt;
+
+    &lt;?endforeach;?&gt;</code>
+
+Ну разве это не очевидно ?:)
+
+Как передать нужные скрипты в шаблон? - элементарно!
+
+В  "головном" контролллере заводим метод
+<code>public function before(){
+
+$this-&gt;template-&gt;scripts = array('jquery.js','someotherscript.js');
+
+$this-&gt;template-&gt;links = array();
+
+}</code>
+Если в "нормальном" контроллере (который наследуется от "головного") нужны другие скрипты или стили - определяем аналогичный метод (не забывая в самом начале вызвать parent::before())
+<code>class Controller_News extends Controller_Main{
+
+public function before(){
+
+parent::before();
+
+$this-&gt;template-&gt;scripts[] = 'customscript.js'//Аналогично можно и со стилями
+
+}
+
+//так же добавлять стили можно и для отдельных action-ов
+
+public function action_index(){
+
+$this-&gt;template-&gt;styles[] = 'bootstrap.css';
+
+.......
+
+......
+
+}
+
+}</code>
+Забыл сказать, метод before вызывается всегда перед выполнением action-a в контроллере, вызывали parent::before() (обязательно в начале!); чтобы выполнились все before, как бы водопадом.
+
+Оптимизация (level 2)
+
+Ничего особенного, просто добавление скриптов можно вынести прямо к закрывающему тегу &lt;/body&gt;. Это позволит браузеру загрузить весь контент и не стопориться на загрузке тяжелых скриптов. Стоит только учесть, что все действия в спритах нужно обрамить в $(document).ready(), иначе
+<code>&lt;?foreach($scripts as $script):?&gt;
+&lt;script type="text/javascript" src='&lt;?=$script?&gt;'&gt;&lt;/script&gt;
+&lt;?endforeach;?&gt;
+&lt;/body&gt;</code>
+Это, скажем, была инфа "для самых маленьких".
+
+Можно пойти еще дальше, использовать require.js, для умной загрузки скриптов, "сливать" стили все стили перед выводом на экран в один файл, но об этом в следующих статьях:)
+
+Hope you enjoyed

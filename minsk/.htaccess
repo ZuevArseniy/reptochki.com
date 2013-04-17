@@ -1,0 +1,32 @@
+RewriteEngine On
+
+RewriteBase /
+
+# редирект с www не без www
+RewriteCond %{HTTP_HOST} ^www.minsk.reptochki\.by$ [NC]
+RewriteRule ^(.*)$ http://minsk.reptochki.by/$1 [R=301,L]
+#убираем несколько слешей в конце url
+
+RewriteCond %{REQUEST_METHOD}  !=POST
+RewriteRule ^(.*).xml/ $1.xml [R=301,L]
+RewriteCond %{REQUEST_METHOD}  !=POST
+RewriteRule ^(.*).html/ $1.html [R=301,L]
+
+
+RewriteCond %{REQUEST_URI} ^(.*)/{2,}(.*)$
+RewriteCond %{REQUEST_METHOD}  !=POST
+RewriteRule (.*) %1/%2 [R=301,L]
+##добавляем слеш в конце url, если нету
+
+RewriteCond %{REQUEST_URI} !(.*)/$
+RewriteCond %{REQUEST_URI} !^(.*)/.xml$
+RewriteCond %{REQUEST_URI} !^(.*).html$
+RewriteCond %{REQUEST_METHOD}  !=POST
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*[^/])$ $1/ [L,R=301]
+# направляем запрос на фронт контроллер
+RewriteCond %{REQUEST_FILENAME} !-f
+#RewriteCond %{REQUEST_FILENAME} !-d
+# Rewrite all other URLs to index.php/URL
+RewriteRule .* index.php/$0 [PT]

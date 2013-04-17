@@ -1,0 +1,12 @@
+User-agent: Yandex
+Disallow: /admin/
+Disallow: /cgi-bin/
+Disallow: /.htaccess
+Disallow: /error_log
+Host: reptochki.by
+
+User-agent: *
+Disallow: /admin/
+Disallow: /cgi-bin/
+Disallow: /.htaccess
+Disallow: /error_log
